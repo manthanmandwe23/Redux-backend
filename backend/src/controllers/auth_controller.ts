@@ -51,9 +51,12 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   if (!user) {
     throw new ApiError(500, "failed to register user");
   }
+  const { password: _, ...userWithoutPassword } = user;
   return res
     .status(201)
-    .json(new ApiResponse(201, user, "user registered successfully"));
+    .json(
+      new ApiResponse(201, userWithoutPassword, "user registered successfully"),
+    );
 });
 
 const generateAccessANDRefreshToken = async (user: User) => {
@@ -137,9 +140,21 @@ const getCurrentUser = asyncHandler(async (req: Request, res: Response) => {
   if (user.rows.length === 0) {
     throw new ApiError(404, "user not found");
   }
+  const {
+    password: _,
+    refreshtoken: __,
+    ...userWithoutSensitiveData
+  } = user.rows[0];
+
   return res
     .status(200)
-    .json(new ApiResponse(200, user.rows[0], "user fetched successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        userWithoutSensitiveData,
+        "user fetched successfully",
+      ),
+    );
 });
 
 export { registerUser, loginUser, logoutUser, getCurrentUser };

@@ -44,9 +44,16 @@ const addToCart = asyncHandler(async (req: Request, res: Response) => {
   if (!cartdata) {
     throw new ApiError(500, "failed to add product to cart");
   }
+  const { user_id: _, ...removedUserIdCartDate } = cartdata;
   return res
     .status(200)
-    .json(new ApiResponse(200, cartdata, "product added to cart successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        removedUserIdCartDate,
+        "product added to cart successfully",
+      ),
+    );
 });
 
 const getCart = asyncHandler(async (req: Request, res: Response) => {
@@ -58,9 +65,12 @@ const getCart = asyncHandler(async (req: Request, res: Response) => {
   if (cartdetails === undefined || cartdetails === null) {
     throw new ApiError(500, "failed to fetched cart details");
   }
+  const cartWithoutUserId = cartdetails.map(
+    ({ user_id, ...cartItem }) => cartItem,
+  );
   return res
     .status(200)
-    .json(new ApiResponse(200, cartdetails, "cart fetched successfully"));
+    .json(new ApiResponse(200, cartWithoutUserId, "cart fetched successfully"));
 });
 //updateCartItem means change the quantity of an existing product in the cart.
 const updateCartItem = asyncHandler(async (req: Request, res: Response) => {
@@ -89,11 +99,10 @@ const updateCartItem = asyncHandler(async (req: Request, res: Response) => {
   if (cartresult.rows.length === 0) {
     throw new ApiError(500, "failed to update cart");
   }
+  const { user_id: _, ...updatedCartItem } = cartresult.rows[0];
   return res
     .status(200)
-    .json(
-      new ApiResponse(200, cartresult.rows[0], "cart updated successfully"),
-    );
+    .json(new ApiResponse(200, updatedCartItem, "cart updated successfully"));
 });
 
 const removeFromCart = asyncHandler(async (req: Request, res: Response) => {
@@ -116,7 +125,7 @@ const removeFromCart = asyncHandler(async (req: Request, res: Response) => {
     .json(
       new ApiResponse(
         200,
-        deletedproduct.rows[0],
+        {},
         "product successfully removed from cart",
       ),
     );
