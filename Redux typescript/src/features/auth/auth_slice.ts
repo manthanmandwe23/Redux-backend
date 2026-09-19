@@ -42,19 +42,36 @@ export const registerUser = createAsyncThunk<
   RegisterUser,
   User,
   { rejectValue: string }
->("user/registerUser", async (userData, thunkAPI) => {
-  try {
-    const userResponse = await api.post("/user/register", userData);
-    return userResponse.data.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Registration failed",
-      );
+>(
+  "user/registerUser",
+  async (
+    { username, fullname, email, password, role, address, phone, avatar }: User,
+    thunkAPI,
+  ) => {
+    try {
+      const formData = new FormData();
+      if (username !== undefined) formData.append("username", username);
+      if (fullname !== undefined) formData.append("fullname", fullname);
+      if (email !== undefined) formData.append("email", email);
+      if (password !== undefined) formData.append("password", password);
+      if (role !== undefined) formData.append("role", role);
+      if (address !== null) formData.append("address", address);
+      if (phone !== null) formData.append("phone", phone);
+      if (avatar !== undefined) formData.append("avatar", avatar);
+
+      const response = await api.post("/user/register", formData);
+      console.log("REGISTER RESPONSE:", response.data);
+      return response.data.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        return thunkAPI.rejectWithValue(
+          error.response?.data?.message || "Registration failed",
+        );
+      }
+      return thunkAPI.rejectWithValue("something went wrong");
     }
-    return thunkAPI.rejectWithValue("something went wrong");
-  }
-});
+  },
+);
 
 export const loginUser = createAsyncThunk<
   RegisterUser,

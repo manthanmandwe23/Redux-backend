@@ -51,7 +51,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   if (!user) {
     throw new ApiError(500, "failed to register user");
   }
-  const { password: _, ...userWithoutPassword } = user;
+  const { password: _, refreshtoken, ...userWithoutPassword } = user;
   return res
     .status(201)
     .json(
@@ -73,11 +73,11 @@ const generateAccessANDRefreshToken = async (user: User) => {
 };
 
 const loginUser = asyncHandler(async (req: Request, res: Response) => {
-  const { username, email, password } = req.body;
-  if (!(username || email)) {
+  const { login, password } = req.body;
+  if (!login) {
     throw new ApiError(409, "username or email is required");
   }
-  const user = await findUserByUsernameOrEmail(username, email);
+  const user = await findUserByUsernameOrEmail(login);
   if (!user) {
     throw new ApiError(404, "user not found");
   }
@@ -101,7 +101,7 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
     user.id,
   ]);
 
-  const user1 = await findUserByUsernameOrEmail(username, email);
+  const user1 = await findUserByUsernameOrEmail(login);
   const { password: _, refreshtoken, ...safeUser } = user1;
   return res
     .status(200)

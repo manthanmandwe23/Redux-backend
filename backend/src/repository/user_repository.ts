@@ -30,11 +30,11 @@ const createUser = async (
   return result.rows[0];
 };
 
-const findUserByUsernameOrEmail = async (username: string, email: string) => {
+const findUserByUsernameOrEmail = async (login: string) => {
   const result = await pool.query(
     `select * from users
-     where username = $1 or email = $2`,
-    [username, email],
+     where username = $1 or email = $1`,
+    [login],
   );
 
   return result.rows[0];

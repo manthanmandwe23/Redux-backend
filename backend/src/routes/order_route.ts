@@ -3,6 +3,7 @@ import verifyJWT from "../middlewares/verifyJWT.js";
 import {
   cancelOrder,
   createOrder,
+  deleteOrder,
   getMyOrders,
   getOrderById,
   updateOrderStatus,
@@ -17,5 +18,6 @@ orderRouter
   .route("/updateOrderStatus/:order_id")
   .patch(verifyJWT, updateOrderStatus);
 orderRouter.route("/cancelOrder/:order_id").patch(verifyJWT, cancelOrder);
+orderRouter.route("/deleteOrder/:order_id").delete(verifyJWT,  deleteOrder)
 
 export { orderRouter };

@@ -9,7 +9,7 @@ export interface Order {
   total_amount: number;
   status: string;
   created_at: Date;
-  update_at: Date;
+  updated_at: Date;
 }
 
 export interface OrderItem {

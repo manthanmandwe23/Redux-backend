@@ -16,6 +16,8 @@ export interface ProductDatafromBackend {
   category: string;
   images: ProductImage[];
 }
+//here we used File[] because when we sent file from frontend we need to use File because we are sending actual file from users computer which is of type File , and when backend sends file in that case we can use this  images: ProductImage[]; where ProductImage defines the file structure we defined in backend, so while sending from frontend - File and when from backend then in a way we defined in backend
+
 export interface ProductDatafromFrontend {
   name: string;
   description: string;
@@ -48,5 +50,3 @@ export interface UpdateProductData {
   category?: string;
   images?: File[];
 }
-
-

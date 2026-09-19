@@ -89,16 +89,45 @@ const getOrderById = asyncHandler(async (req: Request, res: Response) => {
   if (!order_id || !user_id) {
     throw new ApiError(401, "unauthorized request");
   }
-  const response = await pool.query(
-    `select * from orders where order_id = $1 and user_id = $2`,
+
+  const order = await pool.query(
+    `select *
+     from orders
+     where order_id = $1
+     and user_id = $2`,
     [order_id, user_id],
   );
-  if (response.rows.length === 0) {
+
+  if (order.rows.length === 0) {
     throw new ApiError(404, "order not found");
   }
-  return res
-    .status(200)
-    .json(new ApiResponse(200, response.rows[0], "order fetched successfully"));
+
+  const items = await pool.query(
+    `select
+       oi.id,
+       oi.order_id,
+       oi.product_id,
+       oi.quantity,
+       oi.price,
+       p.name,
+       p.description,
+       p.category
+     from order_items oi
+     join product p on oi.product_id = p.id
+     where oi.order_id = $1`,
+    [order_id],
+  );
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        order: order.rows[0],
+        items: items.rows,
+      },
+      "order fetched successfully",
+    ),
+  );
 });
 
 const updateOrderStatus = asyncHandler(async (req: Request, res: Response) => {
@@ -181,6 +210,11 @@ const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
      returning *`,
       ["cancelled", order_id, user_id],
     );
+
+    // await client.query(
+    //   `delete from orders
+    //   where order_id = $1`
+    // )
     await client.query("commit");
   } catch (error) {
     await client.query("rollback");
@@ -194,10 +228,57 @@ const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
     .json(new ApiResponse(200, result.rows[0], "order cancelled successfully"));
 });
 
+const deleteOrder = asyncHandler(async (req: Request, res: Response) => {
+  const user_id = req.user?.id;
+  const { order_id } = req.params;
+
+  if (!user_id || !order_id) {
+    throw new ApiError(401, "unauthorized request");
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("begin");
+
+    // First delete the order items
+    await client.query(
+      `delete from order_items
+       where order_id = $1`,
+      [order_id],
+    );
+
+    // Then delete the order
+    const result = await client.query(
+      `delete from orders
+       where order_id = $1
+       and user_id = $2
+       and status = 'cancelled'
+       returning order_id`,
+      [order_id, user_id],
+    );
+
+    if (result.rows.length === 0) {
+      throw new ApiError(404, "cancelled order not found");
+    }
+
+    await client.query("commit");
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, result.rows[0], "order deleted successfully"));
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  } finally {
+    client.release();
+  }
+});
 export {
   createOrder,
   getMyOrders,
   getOrderById,
   updateOrderStatus,
   cancelOrder,
+  deleteOrder,
 };

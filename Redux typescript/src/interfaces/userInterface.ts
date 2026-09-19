@@ -34,10 +34,10 @@ export interface User {
   role: "user" | "admin";
   address: string | null;
   phone: string | null;
+  avatar: File;
 }
 
 export interface loginUserfromFrontend {
-  username: string;
-  email: string;
+  login: string;
   password: string;
 }

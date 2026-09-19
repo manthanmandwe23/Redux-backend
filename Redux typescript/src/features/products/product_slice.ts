@@ -10,12 +10,14 @@ import { api } from "../../api/axios";
 import axios from "axios";
 
 interface ProductState {
+  selectedProduct: ProductDatafromBackend | null;
   loading: boolean;
   error: string | null;
   product: ProductDatafromBackend[];
 }
 const productiInitialState: ProductState = {
   loading: false,
+  selectedProduct: null,
   error: null,
   product: [],
 };
@@ -38,6 +40,38 @@ export const addProduct = createAsyncThunk<
     thunkAPI,
   ) => {
     try {
+      // here we are sending data like this because we are also sending files (images) and when we send files we need to send it in formData, when we sends normal data like :
+      // {
+      //    product_id: "123",
+      //    quantity: 3
+      // }
+      // this is normal JSON data, so Axios can send it easily
+      // but when we send images: [File, File, File] A File is an actual file from the user's computer.JSON cannot properly send actual files.
+
+      // So we use: const formData = new FormData();
+      // Then:
+      // formData.append("name", name);
+      // formData.append("price", price.toString());
+
+      // and:
+      // formData.append("images", image);
+      // This creates a multipart/form-data request.
+
+      // so the rule is:
+      // If you're uploading files, use FormData. If you're only sending normal values, JSON is enough.
+      // Why toString() for price and stock?
+
+      // Because FormData.append() works with strings or files:
+      // formData.append("price", price.toString());
+
+      // You can't treat it like a normal JSON object where price: 50000 stays a number.
+
+      // Your backend then receives form-data values as strings, so your controller needs to convert them back to numbers if necessary:
+
+      // const price = Number(req.body.price);
+      // const stock = Number(req.body.stock);
+
+      // That's the main reason we did all those FormData steps for product update, but not for cart update.
       const formData = new FormData();
       if (name !== undefined) formData.append("name", name);
       if (description !== undefined)
@@ -207,7 +241,7 @@ const productSlice = createSlice({
       .addCase(addProduct.fulfilled, (state, action) => {
         state.loading = false;
         const index = state.product.findIndex((item) => {
-          item.id === action.payload.id;
+          return item.id === action.payload.id;
         });
         if (index !== -1) {
           state.product[index] = action.payload;
@@ -231,25 +265,25 @@ const productSlice = createSlice({
           (state.error = action.payload || "failed to fetch product"));
       })
       //getProductById
+      /**
+       * product: ProductDatafromBackend[];
+        So product is an array.
+
+        When getProductById returns one product:
+        If that product already exists in the array → update it.
+        If it doesn't exist → push it into the array.
+       */
       .addCase(getProductById.pending, (state) => {
-        ((state.loading = true), (state.error = null));
+        state.loading = true;
+        state.error = null;
       })
       .addCase(getProductById.fulfilled, (state, action) => {
         state.loading = false;
-
-        const index = state.product.findIndex(
-          (item) => item.id === action.payload.id,
-        );
-
-        if (index !== -1) {
-          state.product[index] = action.payload;
-        } else {
-          state.product.push(action.payload);
-        }
+        state.selectedProduct = action.payload;
       })
       .addCase(getProductById.rejected, (state, action) => {
-        ((state.loading = false),
-          (state.error = action.payload || "failed to fetch product"));
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch product";
       })
       //updateProductDetails
       .addCase(updateProductDetails.pending, (state) => {
@@ -258,7 +292,7 @@ const productSlice = createSlice({
       .addCase(updateProductDetails.fulfilled, (state, action) => {
         state.loading = false;
         const index = state.product.findIndex((item) => {
-          item.id === action.payload.id;
+          return item.id === action.payload.id;
         });
         if (index !== -1) {
           state.product[index] = action.payload;
